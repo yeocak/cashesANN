@@ -18,10 +18,16 @@ class ActivationSoftmax(ActivationFunction):
         return cls._instance
 
     def execute(self, inputs: np.array) -> np.array:
+        return None
+
+    def execute_derivative(self, inputs: np.array) -> np.array:
+        return None
+
+    def execute_list(self, inputs: np.array) -> np.array:
         e = np.exp(inputs)
         return e / np.sum(e)
 
-    def execute_derivative(self, inputs: np.array) -> np.array:
+    def execute_derivative_list(self, inputs: np.array) -> np.array:
         n = len(inputs)
         d = np.zeros((n, n))
 
@@ -33,9 +39,3 @@ class ActivationSoftmax(ActivationFunction):
                     d[i, j] = -inputs[i] * inputs[j]
 
         return d
-
-    def execute_list(self, inputs: np.array) -> np.array:
-        return self.execute(inputs)
-
-    def execute_derivative_list(self, inputs: np.array) -> np.array:
-        return self.execute_derivative(inputs)
