@@ -1,11 +1,10 @@
-from multiprocessing import Array
 from typing import List
 
 import numpy as np
 
+from src.CrossEntropy import CrossEntropy
 from src.ForwardResult import ForwardResult
 from src.Layer import Layer
-from src.LayerDifferenceResult import LayerDifferenceResult
 from src.LayerOption import LayerOption
 from src.activation.ActivationSoftmax import ActivationSoftmax
 
@@ -45,82 +44,75 @@ class ArtificialNN:
 
     def execute_backward(self, forward_result: ForwardResult, true_values: np.array) -> np.array:
         differences = self.calculate_differences(forward_result, true_values)
-        self.update_parameters(differences, 0.1)
+        self.update_parameters(differences, forward_result, 0.1)
         return differences
 
     # dZ1 = W2.T.dot(dZ2) * ReLU_deriv(Z1)
     # dW1 = 1 / m * dZ1.dot(X.T)
     # db1 = 1 / m * np.sum(dZ1)
     # returns list of LayerDifferenceResult
-    def calculate_differences(self, forward_result: ForwardResult, true_values: np.array) -> np.array:
+    def calculate_differences(self, forward_result: ForwardResult, true_values: np.array) -> np.ndarray:
         if (len(self.layers) == 0) or (len(true_values) == 0) or (len(forward_result.a_list) == 0):
             raise Exception('Number of layers, true values, predict values are can\'t be zero!')
 
         if len(true_values) != len(forward_result.get_output_layer_a()):
             raise Exception('True values and predict values are not in same size!')
 
-        layer_count = len(self.layers)
-        output_class_count = len(self.layers[-1].neuronList)
+        delta_list = list()
 
-        result_list: List[LayerDifferenceResult] = []
-
-        d_last_layer_z: Array[float] = []
-
-        # calculate for output first
-        previous_result_a_list = forward_result.a_list[-2] if layer_count > 1 else forward_result.input_list
-
-        d_output_z = np.subtract(forward_result.get_output_layer_a(), true_values)
-        d_output_weight = 1 / output_class_count * np.dot(d_output_z, previous_result_a_list.T)
-        d_output_bias = 1 / output_class_count * np.sum(d_output_z)
-
-        d_last_layer_z = d_output_z.copy()
-
-        result_list.append(LayerDifferenceResult(d_output_z, d_output_weight, d_output_bias))
-
-        # loop is not going to calculate for output layer, input layer and first hidden layer
-        # example: 4 layers -> 2,1
-        last_hidden_layer_index = layer_count - 2
+        output_layer_index = len(self.layers) - 1
         first_hidden_layer_index = 0
-        for forward_index in range(last_hidden_layer_index, first_hidden_layer_index, -1):
-            current_layer = self.layers[forward_index]
-            next_layer = self.layers[forward_index + 1]
-            current_result_z_list = forward_result.z_list[forward_index]
-            previous_result_a_list = forward_result.a_list[forward_index - 1]
-            next_weight_transposed = next_layer.get_weight_matrix().T
+        for layer_index in range(output_layer_index, first_hidden_layer_index - 1, -1):
+            current_layer = self.layers[layer_index]
 
-            d_layer_z = (np.dot(next_weight_transposed, d_last_layer_z) *
-                         current_layer.get_single_activation().execute_derivative_list(current_result_z_list))
-            d_layer_weight = 1 / output_class_count * np.dot(d_layer_z, previous_result_a_list.T)
-            d_layer_bias = 1 / output_class_count * np.sum(d_layer_z)
+            errors = np.empty(len(current_layer.neuronList))
+            # calculate for output layer
+            if layer_index == output_layer_index:
+                for neuron_index, neuron in enumerate(current_layer.neuronList):
+                    neuron_result = forward_result.a_list[layer_index][neuron_index]
+                    expected_result = true_values[neuron_index]
+                    errors[neuron_index] = neuron_result - expected_result
 
-            d_last_layer_z = d_layer_z.copy()
+            # calculate for hidden layers
+            else:
+                for neuron_index, neuron in enumerate(current_layer.neuronList):
+                    current_error = 0.0
+                    for next_layer_neuron_index, next_layer_neuron in enumerate(
+                            self.layers[layer_index + 1].neuronList):
+                        current_error += next_layer_neuron.inputWeights[neuron_index] * delta_list[-1][
+                            next_layer_neuron_index]
+                    errors[neuron_index] = current_error
 
-            result_list.append(LayerDifferenceResult(d_layer_z, d_layer_weight, d_layer_bias))
+            # calculate deltas for next layer
+            if isinstance(current_layer.get_single_activation(), ActivationSoftmax):
+                # if activation is softmax
+                next_layer = true_values if layer_index == output_layer_index else forward_result.a_list[layer_index + 1]
+                cross_entropy = CrossEntropy.execute(forward_result.a_list[layer_index], next_layer)
+                #softmaxed_output = current_layer.get_single_activation().execute_derivative_list(forward_result.a_list[layer_index])
+                new_deltas = np.empty(len(current_layer.neuronList))
+                for neuron_index, neuron in enumerate(current_layer.neuronList):
+                    delta = errors[neuron_index] * cross_entropy
+                    new_deltas[neuron_index] = delta
+                delta_list.append(new_deltas)
+            else:
+                # if activation is not softmax
+                new_deltas = np.empty(len(current_layer.neuronList))
+                for neuron_index, neuron in enumerate(current_layer.neuronList):
+                    delta = (errors[neuron_index] *
+                             neuron.activation.execute_derivative(forward_result.a_list[layer_index][neuron_index]))
+                    new_deltas[neuron_index] = delta
+                delta_list.append(new_deltas)
 
-        # calculate for first hidden layer
-        if layer_count > 1:
-            input_layer_transposed = forward_result.input_list.T
-            current_layer = self.layers[0]
-            next_layer = self.layers[1]
-            current_result_z_list = forward_result.z_list[0]
-            next_weight_transposed = next_layer.get_weight_matrix().T
+        delta_list.reverse()
+        return np.array(delta_list)
 
-            d_first_layer_z = (np.dot(next_weight_transposed, d_last_layer_z) *
-                               current_layer.get_single_activation().execute_derivative_list(current_result_z_list))
-            d_first_layer_weight = (1 / output_class_count * np.dot(d_first_layer_z, input_layer_transposed))
-            d_first_layer_bias = 1 / output_class_count * np.sum(d_first_layer_z)
-
-            result_list.append(LayerDifferenceResult(d_first_layer_z, d_first_layer_weight, d_first_layer_bias))
-
-        result_list.reverse()
-        return result_list
-
-    def update_parameters(self, differences: List[LayerDifferenceResult], step_alpha: float):
-        for difference_index in range(len(differences)):
-            new_bias = self.layers[difference_index].get_single_bias() - step_alpha * differences[difference_index].b
-            new_weights = (self.layers[difference_index].get_weight_matrix() - step_alpha * differences[difference_index].w)
-            self.layers[difference_index].set_bias(new_bias)
-            self.layers[difference_index].set_weight_matrix(new_weights)
+    def update_parameters(self, delta_list: np.ndarray, forward_result: ForwardResult, step_alpha: float):
+        for layer_index, layer in enumerate(self.layers):
+            inputs = forward_result.input_list if layer_index == 0 else forward_result.a_list[layer_index - 1]
+            for neuron_index, neuron in enumerate(layer.neuronList):
+                for inputf_index, inputf in enumerate(inputs):
+                    neuron.inputWeights[inputf_index] -= step_alpha * delta_list[layer_index][neuron_index] * inputf
+                neuron.bias -= step_alpha * delta_list[layer_index][neuron_index]
 
     def get_ann_matrix_height(self) -> int:
         return len(self.layers)

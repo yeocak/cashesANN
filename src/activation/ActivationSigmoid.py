@@ -25,10 +25,10 @@ class ActivationSigmoid(ActivationFunction):
         result = []
         for single_input in inputs:
             result.append(self.execute(single_input))
-        return result
+        return np.array(result)
 
     def execute_derivative_list(self, inputs: np.array) -> np.array:
         result = []
         for single_input in inputs:
             result.append(self.execute_derivative(single_input))
-        return result
+        return np.array(result)
