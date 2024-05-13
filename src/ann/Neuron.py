@@ -1,8 +1,6 @@
-from typing import List
-
 import numpy as np
 
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
 class Neuron:
@@ -24,7 +22,7 @@ class Neuron:
         return len(self.inputWeights)
 
     def execute(self, inputs: np.array) -> (float, float):
-        if self.get_number_of_inputs() != len(inputs):
+        if self.get_number_of_inputs() != np.sum(~np.isnan(inputs)):
             raise Exception('Number of inputs does not match')
 
         linear_sum: float = self.bias

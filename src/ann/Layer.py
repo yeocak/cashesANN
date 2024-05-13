@@ -2,10 +2,9 @@ import random
 from typing import List
 
 import numpy as np
-from numpy import array
 
-from src.Neuron import Neuron
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.Neuron import Neuron
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
 class Layer:
@@ -35,6 +34,9 @@ class Layer:
 
     def get_single_bias(self) -> float:
         return self.neuronList[0].bias
+
+    def get_input_count(self) -> int:
+        return len(self.neuronList[0].inputWeights)
 
     @staticmethod
     def create_random(neuron_number: int, input_number: int, activation_function: ActivationFunction, seed: int, layer_index: int):

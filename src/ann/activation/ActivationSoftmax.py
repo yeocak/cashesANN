@@ -1,8 +1,6 @@
-from typing import List
-
 import numpy as np
 
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
 class ActivationSoftmax(ActivationFunction):
@@ -39,3 +37,6 @@ class ActivationSoftmax(ActivationFunction):
                     d[i, j] = -inputs[i] * inputs[j]
 
         return d
+
+    def get_name(self) -> str:
+        return "ActivationSoftmax"

@@ -1,9 +1,9 @@
 import numpy as np
 
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
-class ActivationSigmoid(ActivationFunction):
+class ActivationTanH(ActivationFunction):
     _instance = None
 
     def __init__(self):
@@ -16,10 +16,10 @@ class ActivationSigmoid(ActivationFunction):
         return cls._instance
 
     def execute(self, inputf: float) -> float:
-        return 1 / (1 + np.exp(-inputf))
+        return np.tanh(inputf)
 
     def execute_derivative(self, inputf: float) -> float:
-        return self.execute(inputf) * (1 - self.execute(inputf))
+        return 1 - np.square(self.execute(inputf))
 
     def execute_list(self, inputs: np.array) -> np.array:
         result = []
@@ -32,3 +32,6 @@ class ActivationSigmoid(ActivationFunction):
         for single_input in inputs:
             result.append(self.execute_derivative(single_input))
         return np.array(result)
+
+    def get_name(self) -> str:
+        return "ActivationTanH"

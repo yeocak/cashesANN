@@ -1,4 +1,4 @@
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
 class LayerOption:

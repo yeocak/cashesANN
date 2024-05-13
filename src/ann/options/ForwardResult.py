@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 
 
@@ -10,7 +12,7 @@ class ForwardResult:
 
     # z_list is (∑wx)+b
     # a_list is g(zList) (could be any activation function)
-    def __init__(self, input_list: np.array, z_list: np.ndarray, a_list: np.ndarray):
+    def __init__(self, input_list: np.array, z_list: List[np.array], a_list: List[np.array]):
         self.input_list = input_list
         self.a_list = a_list
         self.z_list = z_list

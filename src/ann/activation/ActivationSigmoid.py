@@ -1,11 +1,9 @@
-from typing import List
-
 import numpy as np
 
-from src.activation.ActivationFunction import ActivationFunction
+from src.ann.activation.ActivationFunction import ActivationFunction
 
 
-class ActivationReLU(ActivationFunction):
+class ActivationSigmoid(ActivationFunction):
     _instance = None
 
     def __init__(self):
@@ -18,19 +16,25 @@ class ActivationReLU(ActivationFunction):
         return cls._instance
 
     def execute(self, inputf: float) -> float:
-        return max(0.0, inputf)
+        real = 1 / (1 + np.exp(-inputf))
+        real = np.minimum(real, 0.9999)  # Set upper bound
+        real = np.maximum(real, 0.0001)  # Set lower bound
+        return real
 
     def execute_derivative(self, inputf: float) -> float:
-        return inputf > 0
+        return self.execute(inputf) * (1 - self.execute(inputf))
 
     def execute_list(self, inputs: np.array) -> np.array:
         result = []
         for single_input in inputs:
             result.append(self.execute(single_input))
-        return result
+        return np.array(result)
 
     def execute_derivative_list(self, inputs: np.array) -> np.array:
         result = []
         for single_input in inputs:
             result.append(self.execute_derivative(single_input))
-        return result
+        return np.array(result)
+
+    def get_name(self) -> str:
+        return "ActivationSigmoid"

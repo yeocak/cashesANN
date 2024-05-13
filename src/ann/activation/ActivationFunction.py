@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from typing import List
 
 import numpy as np
 
@@ -19,4 +18,8 @@ class ActivationFunction:
 
     @abstractmethod
     def execute_derivative_list(self, inputs: np.array) -> np.array:
+        pass
+
+    @abstractmethod
+    def get_name(self):
         pass
