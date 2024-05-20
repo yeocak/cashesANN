@@ -3,6 +3,7 @@ from typing import List, Optional
 import numpy as np
 
 from src.ann.ArtificialNN import ArtificialNN
+from src.ann.Layer import Layer
 from src.ann.options.ForwardResult import ForwardResult
 from src.ann.options.LayerOption import LayerOption
 from src.ann.properties.ANNProperties import ANNProperties
@@ -22,8 +23,8 @@ class RecurrentNN:
                 last_result = self.ann.execute_forward(first_input)
             else:
                 last_output = ArrayUtils.eliminate_nan(last_result.a_list[-1])
-                fill_count = self.ann.get_input_count() - len(inputs[0]) - len(last_output)
-                word_input = np.concatenate((inputs[0], np.zeros(fill_count)))
+                fill_count = self.ann.get_input_count() - len(pure_input) - len(last_output)
+                word_input = np.concatenate((pure_input, np.zeros(fill_count)))
                 new_input = np.concatenate((word_input, last_output))
                 last_result = self.ann.execute_forward(new_input)
 
@@ -38,6 +39,14 @@ class RecurrentNN:
         input_number = input_number + layers[-1].neuronNumber
         result = ArtificialNN.create_random(seed, input_number, layers)
         return cls(result)
+
+    @classmethod
+    def create_from_properties(cls, properties: ANNProperties):
+        layers = properties.layers
+        ann = ArtificialNN()
+        ann.layers = layers
+        result = cls(ann)
+        return result
 
     def get_properties(self, seed: Optional[int]) -> ANNProperties:
         return ANNProperties(self.ann.layers, seed)

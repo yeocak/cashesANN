@@ -65,7 +65,7 @@ def clean_text(text, english_vocab, html_pattern):
     # Sayıları kaldırma
     text_string = re.sub(r'\d+', '', text_string)
     # Durak kelimelerini (stopwords) kaldırma ve küçük harfe dönüştürme
-    text_string = " ".join([word for word in text_string.lower().split() if word not in stopwords])
+    #text_string = " ".join([word for word in text_string.lower().split() if word not in stopwords])
 
     # Spell checker
     text_string = " ".join([word if word in english_vocab else word for word in text_string.split()])
@@ -159,7 +159,7 @@ def create_processed_review_data(seed: int):
             review_word_count = len(review_words)
             max_review_word_count = max(max_review_word_count, review_word_count)
 
-    cleaned_reviews.to_csv("assets/processed_reviews.csv", index=False)
+    cleaned_reviews.to_csv("assets/processed_reviews_2.csv", index=False)
 
     end_time = time.time()
     execution_time = end_time - start_time

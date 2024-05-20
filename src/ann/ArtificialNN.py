@@ -149,5 +149,12 @@ class ArtificialNN:
             result.layers.append(layer)
         return result
 
+    @classmethod
+    def create_from_properties(cls, properties: ANNProperties):
+        layers = properties.layers
+        result = cls()
+        result.layers = layers
+        return result
+
     def get_properties(self, seed: Optional[int]) -> ANNProperties:
         return ANNProperties(self.layers, seed)

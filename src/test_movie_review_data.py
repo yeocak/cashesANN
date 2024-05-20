@@ -3,12 +3,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from numpy.core.defchararray import isnumeric
 
 from src.ann.activation.ActivationReLU import ActivationReLU
 from src.ann.activation.ActivationSigmoid import ActivationSigmoid
 from src.ann.activation.ActivationSoftmax import ActivationSoftmax
 from src.ann.activation.ActivationTanH import ActivationTanH
 from src.ann.options.LayerOption import LayerOption
+from src.ann.properties.ANNProperties import ANNProperties
 from src.rnn.RecurrentNN import RecurrentNN
 from src.utils.FileUtils import FileUtils
 
@@ -16,7 +18,7 @@ seed = 0
 
 
 def read_movie_review_data(count: int):
-    df = pd.read_csv('assets/processed_reviews.csv').head(count)
+    df = pd.read_csv('assets/reviews_no_stop.csv').head(count)
     return df
 
 
@@ -75,24 +77,28 @@ def test_math_data():
     activation_softmax = ActivationSoftmax.get_instance()
     activation_tanh = ActivationTanH.get_instance()
 
-    max_word_length = 20
+    max_word_length = 21
 
     rnn = RecurrentNN.create_random(seed, max_word_length, [
+        LayerOption(seed, 30, activation_tanh),
         LayerOption(seed, 20, activation_tanh),
         LayerOption(seed, 10, activation_tanh),
+        LayerOption(seed, 5, activation_tanh),
         LayerOption(seed, 1, activation_tanh),
     ])
 
     difference_list = list()
     plt.ion()
 
-    epoch = 10
-    print_frequance = 500
+    epoch = 20
+    print_frequance = 3999
     number_of_data = 20000
     df = read_movie_review_data(number_of_data)
     for iteration in range(epoch):
         optimization_sum = 0
         for index, row in df.iterrows():
+            if not isnumeric(row['rating']):
+                continue
             true_rating = float(int(row['rating'])) / 10
             true_review = str(row['review'])
             true_title = str(row['title'])
@@ -102,26 +108,36 @@ def test_math_data():
             forward_result = rnn.execute_forward(ascii_review_sentences)
             # print(forward_result)
             #true_result_one_hot = one_hot_encode(true_rating)
-            backward_result = rnn.execute_backward(forward_result, [true_rating], 0.0001)
+            backward_result = rnn.execute_backward(forward_result, [true_rating], 0.001)
 
             #optimization_sum += calculate_optimization_basic(forward_result.a_list[-1], true_rating)
             optimization_sum += abs(true_rating-forward_result.a_list[-1][0])
             #print("true value:\t", true_rating, "\tpredictions:\t", np.array(forward_result.a_list[-1]))
             if index > print_frequance and index % print_frequance == 0:
-               loss = float(optimization_sum) / print_frequance
-               optimization_sum = 0
-               difference_list.append(loss)
-               plt.plot(difference_list)
-               plt.pause(0.001)
-               plt.clf()
-               print("Epoch: ", iteration, "\tLoss: ", loss)
+                loss = float(optimization_sum) / print_frequance
+                optimization_sum = 0
+                difference_list.append(loss)
+                plt.plot(difference_list)
+                plt.ylim(0, 1)
+                plt.pause(0.001)
+                plt.clf()
+                print("Epoch: ", iteration, "\tLoss: ", loss)
 
         rnn_model = rnn.get_properties_as_str(seed)
-        FileUtils.write_to_txt(f"rnn_epoch_{iteration + 1}", rnn_model)
+        FileUtils.write_to_txt(f"rnn2_epoch_{iteration + 1}", rnn_model)
         #print("Epoch: ", iteration + 1, "\tLoss: ", loss)
 
     # plt.show()
 
+def test_input_data():
+    review = input("Write your review:")
+    review_words = get_review_ascii_array(review)
+    rnn_stringfied = FileUtils.read_from_txt(f"rnn2_epoch_3")
+    rnn_property = ANNProperties.get_property_from_stringfied(rnn_stringfied)
+    rnn = RecurrentNN.create_from_properties(rnn_property)
+    test_result = rnn.execute_forward(review_words)
+    print(test_result.a_list[-1])
 
 if __name__ == '__main__':
-    test_math_data()
+    #test_math_data()
+    test_input_data()

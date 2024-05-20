@@ -47,7 +47,7 @@ class Layer:
             for input_index in range(input_number):
                 weight_seed = int(f'{seed}{layer_index}{neuron_index}{input_index}')
                 random.seed(weight_seed)
-                weights[input_index] = random.random()
+                weights[input_index] = random.random() - 0.5
 
             bias_seed = int(f'{seed}{layer_index}{neuron_index}')
             random.seed(bias_seed)
